@@ -1,0 +1,9 @@
+[project]
+name = "job-application-tracker"
+version = "0.1.0"
+description = "Local job application tracker: paste a job link, track status, see response stats."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

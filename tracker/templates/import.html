@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Import{% endblock %}
+{% block content %}
+<h1>Import from Google Sheets</h1>
+<div class="panel prose">
+  <ol>
+    <li>In Google Sheets, open your job sheet and choose <strong>File → Download → Comma-separated values (.csv)</strong>.</li>
+    <li>Upload the file below.</li>
+  </ol>
+  <p class="muted">Columns are matched by their header: <em>Job Title / Position / Role</em>, <em>Company</em>,
+    <em>Date Applied / Date</em>, <em>Link / URL</em>, and optionally <em>Status</em>, <em>Location</em>, <em>Salary</em>, <em>Notes</em>.
+    Importing the same sheet again skips jobs you already have.</p>
+  <form method="post" action="/import" enctype="multipart/form-data" class="upload">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button class="btn primary" type="submit">Import</button>
+  </form>
+</div>
+
+{% if error %}<p class="notice err">{{ error }}</p>{% endif %}
+
+{% if summary %}
+<div class="panel">
+  <h2>Imported {{ summary.imported }} {{ 'application' if summary.imported == 1 else 'applications' }}</h2>
+  <p class="muted">Matched columns:
+    {% for field, header in summary.columns.items() %}<span class="chip">{{ field }} ← “{{ header }}”</span> {% endfor %}
+  </p>
+  {% if summary.duplicates %}<p>{{ summary.duplicates }} already in the tracker (skipped).</p>{% endif %}
+  {% if summary.skipped %}
+  <p>{{ summary.skipped|length }} rows couldn't be imported:</p>
+  <ul>{% for s in summary.skipped %}<li>{{ s }}</li>{% endfor %}</ul>
+  {% endif %}
+  <p><a class="btn" href="/">See applications</a></p>
+</div>
+{% endif %}
+{% endblock %}

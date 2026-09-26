@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+{% macro sort_link(key, label) -%}
+  {%- set active = sort == key -%}
+  {%- set next_dir = 'asc' if active and dir == 'desc' else 'desc' -%}
+  <a class="sort{% if active %} active{% endif %}" href="/?{{ {'status': status, 'q': q, 'sort': key, 'dir': next_dir} | urlencode }}">
+    {{ label }}{% if active %} <span aria-hidden="true">{{ '↓' if dir == 'desc' else '↑' }}</span>{% endif %}
+  </a>
+{%- endmacro %}
+
+<form class="paste panel" action="/add" method="get">
+  <label for="url">Paste a job link</label>
+  <div class="paste-row">
+    <input id="url" name="url" type="url" required placeholder="https://boards.greenhouse.io/company/jobs/123" autocomplete="off">
+    <button class="btn primary" type="submit">Add job</button>
+  </div>
+  <p class="hint">It reads the title, company, location and salary from the posting. Or <a href="/add">add one by hand</a>.</p>
+</form>
+
+{% if follow_ups %}
+<details class="panel follow">
+  <summary><strong>{{ follow_ups|length }}</strong> {{ 'application has' if follow_ups|length == 1 else 'applications have' }} had no update in 2+ weeks. Consider following up or marking them rejected.</summary>
+  <ul>
+    {% for f in follow_ups %}
+    <li><a href="/applications/{{ f.id }}">{{ f.title }}</a> at {{ f.company }} <span class="muted">· {{ f.days_waiting }} days</span></li>
+    {% endfor %}
+  </ul>
+</details>
+{% endif %}
+
+<div class="toolbar">
+  <nav class="chips" aria-label="Filter by status">
+    <a class="chip{% if not status %} on{% endif %}" href="/?{{ {'q': q, 'sort': sort, 'dir': dir} | urlencode }}">All <span>{{ counts.values()|sum }}</span></a>
+    {% for s in STATUSES %}
+    <a class="chip s-{{ s }}{% if status == s %} on{% endif %}" href="/?{{ {'status': s, 'q': q, 'sort': sort, 'dir': dir} | urlencode }}">{{ s|capitalize }} <span>{{ counts[s] }}</span></a>
+    {% endfor %}
+  </nav>
+  <form class="search" method="get" action="/">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input type="hidden" name="sort" value="{{ sort }}">
+    <input type="hidden" name="dir" value="{{ dir }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Search title, company, notes…" aria-label="Search">
+  </form>
+</div>
+
+{% if rows %}
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>{{ sort_link('applied', 'Applied') }}</th>
+      <th>{{ sort_link('title', 'Job') }}</th>
+      <th>{{ sort_link('company', 'Company') }}</th>
+      <th class="hide-sm">Location</th>
+      <th class="hide-sm">Site</th>
+      <th>{{ sort_link('status', 'Status') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr{% if r.id == highlight %} class="new"{% endif %}>
+      <td class="mono">{{ r.applied_on or '—' }}</td>
+      <td><a href="/applications/{{ r.id }}">{{ r.title }}</a>{% if r.salary %}<div class="muted small">{{ r.salary }}</div>{% endif %}</td>
+      <td>{{ r.company }}</td>
+      <td class="hide-sm muted">{{ r.location }}</td>
+      <td class="hide-sm">{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener noreferrer">{{ r.source or 'link' }} ↗</a>{% endif %}</td>
+      <td>
+        <form method="post" action="/applications/{{ r.id }}/status">
+          <input type="hidden" name="next" value="{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}">
+          <select name="status" class="s-{{ r.status }}" aria-label="Status for {{ r.title }}" onchange="this.form.submit()">
+            {% for s in STATUSES %}<option value="{{ s }}"{% if s == r.status %} selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+          </select>
+          <noscript><button class="btn small">Set</button></noscript>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% elif q or status %}
+<p class="empty">No applications match. <a href="/">Clear filters</a></p>
+{% else %}
+<div class="empty panel">
+  <h2>No applications yet</h2>
+  <p>Paste a job link above, or <a href="/import">import your Google Sheet</a>.</p>
+</div>
+{% endif %}
+{% endblock %}

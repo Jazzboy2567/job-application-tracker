@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Add job' if mode == 'add' else job.title }}{% endblock %}
+{% block content %}
+<p><a href="/" class="muted">← All applications</a></p>
+
+{% if duplicate %}
+<p class="notice warn">You're already tracking this job: <a href="/applications/{{ duplicate.id }}">{{ duplicate.title }} at {{ duplicate.company }}</a>.</p>
+{% endif %}
+{% if error %}<p class="notice err">{{ error }}</p>{% endif %}
+{% if mode == 'add' and job.found_via %}
+<p class="notice info">Filled in automatically from {{ job.found_via }}. Check it before saving.</p>
+{% endif %}
+
+<div class="edit-grid">
+  <form class="panel form" method="post" action="{{ '/applications' if mode == 'add' else '/applications/%d' % job.id }}">
+    <h1>{{ 'Add a job' if mode == 'add' else 'Edit application' }}</h1>
+    <div class="row">
+      <label class="grow">Job title *<input name="title" value="{{ job.title or '' }}" required maxlength="300"></label>
+      <label class="grow">Company *<input name="company" value="{{ job.company or '' }}" required maxlength="200"></label>
+    </div>
+    <label>Link<input name="url" type="url" value="{{ job.url or '' }}" placeholder="https://…"></label>
+    <div class="row">
+      <label class="grow">Location<input name="location" value="{{ job.location or '' }}"></label>
+      <label class="grow">Salary<input name="salary" value="{{ job.salary or '' }}"></label>
+    </div>
+    <div class="row">
+      <label class="grow">Job type<input name="employment_type" value="{{ job.employment_type or '' }}" placeholder="Full Time"></label>
+      <label>Posted<input name="date_posted" type="date" value="{{ job.date_posted or '' }}"></label>
+      <label>Applied<input name="applied_on" type="date" value="{{ job.applied_on or '' }}"></label>
+    </div>
+    {% if mode == 'add' %}
+    <label>Status
+      <select name="status">
+        {% for s in STATUSES %}<option value="{{ s }}"{% if s == 'applied' %} selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endif %}
+    <label>Notes<textarea name="notes" rows="4" placeholder="Recruiter name, referral, what you tailored…">{{ job.notes or '' }}</textarea></label>
+    <div class="actions">
+      <button class="btn primary" type="submit">{{ 'Save application' if mode == 'add' else 'Save changes' }}</button>
+      {% if job.url %}<a class="btn" href="{{ job.url }}" target="_blank" rel="noopener noreferrer">Open posting ↗</a>{% endif %}
+    </div>
+  </form>
+
+  {% if mode == 'edit' %}
+  <aside class="side">
+    <form class="panel form" method="post" action="/applications/{{ job.id }}/status">
+      <h2>Status</h2>
+      <input type="hidden" name="next" value="/applications/{{ job.id }}">
+      <select name="status" class="s-{{ job.status }}">
+        {% for s in STATUSES %}<option value="{{ s }}"{% if s == job.status %} selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}
+      </select>
+      <label>Date of change<input type="date" name="on" value="{{ today() }}"></label>
+      <button class="btn" type="submit">Update status</button>
+    </form>
+
+    <div class="panel">
+      <h2>History</h2>
+      <ol class="history">
+        {% for h in history %}
+        <li><span class="mono">{{ h.changed_on }}</span> <span class="badge s-{{ h.status }}">{{ h.status|capitalize }}</span></li>
+        {% endfor %}
+      </ol>
+    </div>
+
+    <form method="post" action="/applications/{{ job.id }}/delete" onsubmit="return confirm('Delete this application? This cannot be undone.')">
+      <button class="btn danger" type="submit">Delete application</button>
+    </form>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}
