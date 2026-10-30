@@ -1,5 +1,7 @@
 # Job Application Tracker
 
+[![Tests](https://github.com/Jazzboy2567/job-application-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/Jazzboy2567/job-application-tracker/actions/workflows/tests.yml)
+
 A local web app for keeping track of job applications. Paste a link to a job
 posting and it fills in the title, company, location, salary and posting date
 for you. Then track each application from *Applied* to *Interview* to *Offer*
